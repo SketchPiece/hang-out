@@ -9,7 +9,7 @@ import { useVideoSync } from '../hooks/useVideoSync'
 import { connectionMachine } from '../machines/connectionMachine'
 
 const WEB_SOCKET_URL =
-  process.env.NODE_EN === 'production'
+  process.env.NODE_ENV === 'production'
     ? process.env.REACT_APP_PRODUCTION_WEBSOCKET_URL
     : 'ws://localhost:8080'
 
