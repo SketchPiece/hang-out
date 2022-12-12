@@ -5,7 +5,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "start": "concurrently \"wsrun --parallel start\"",
+    "start": "cd packages/server && yarn start",
     "start:server": "cd packages/server && yarn start"
   },
   "workspaces": [
