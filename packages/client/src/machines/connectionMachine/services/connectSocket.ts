@@ -7,7 +7,10 @@ export const connectSocket =
   (context: MachineContext) =>
   (callback: AnyCallback, onReceive: Receiver<EventObject>) => {
     const socket = io(context.uri, {
-      transports: ['websocket']
+      transports: ['websocket'],
+      query: {
+        room: context.roomId
+      }
     })
     console.log('CONNECT SOCKET')
     socket.on('connect', () => {

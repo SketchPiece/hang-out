@@ -6,3 +6,13 @@ export interface VideoState {
   streamUrl: string
   clientId?: string
 }
+
+export interface User {
+  username: string
+  ready: boolean
+}
+
+export interface RoomState {
+  videoState: VideoState
+  users: Record<string, User>
+}

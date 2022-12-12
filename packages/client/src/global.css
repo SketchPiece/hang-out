@@ -1,3 +1,56 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply h-full;
+  }
+}
+
+@layer components {
+  .progress {
+    @apply w-full h-[9px] cursor-pointer;
+  }
+
+  .progress-thumb.active {
+    @apply outline-none;
+  }
+
+  .progress-track {
+    @apply bg-white;
+  }
+
+  .progress-track.progress-track-1 {
+    @apply bg-white opacity-20;
+  }
+
+  .progress .progress-track {
+    @apply top-[3px] h-[3px];
+  }
+
+  .progress .progress-thumb {
+    @apply top-[0px] h-0 w-0;
+  }
+
+  .progress-thumb .inner-thumb-container {
+    @apply relative;
+  }
+
+  .inner-thumb-container .inner-thumb {
+    @apply bg-white rounded-full h-[10px] w-[10px] absolute -left-[5px] top-0 opacity-0;
+  }
+
+  .inner-thumb-container .inner-thumb.active {
+    @apply opacity-100;
+  }
+
+  .controls-blur-gradient {
+    -webkit-mask: -webkit-linear-gradient(black, transparent 30%, black);
+    -webkit-mask: linear-gradient(black, transparent 30%, black);
+    -webkit-filter: blur(3px);
+    mask: url('#mask-linear');
+    filter: url('#filtre2');
+  }
+}

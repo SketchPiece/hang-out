@@ -5,6 +5,7 @@ import { connectSocket, syncServerTime } from './services'
 
 export interface MachineContext {
   uri: string
+  roomId: string
   socket: Socket | null
   timeCorrection: number
 }
@@ -22,7 +23,7 @@ export const connectionMachine =
   /** @xstate-layout N4IgpgJg5mDOIC5QGMD2A7dZkBcCWGAdHunvgIYA2eAXiVAMSyrIDWYOAwhlrpANoAGALqJQAB1SwyBdGJAAPRAEZlAdkIBOAEzaAzHoAcmzWuUBWI2oA0IAJ6IAtMr0blhweeWaAbABZBH21zP0MAXzDbNExsfCJo3hxIJhZ2HAARPFgE2IEReUlpOLkkRUQfNUFCPU1LSz9tM09tWwcEZx1CQ26-C21TZu0fCKieWNlCHL4IBjAAWzIhUVLCmQx5JQQ-Sq0+nx9DH1UDvVanAx8utR1Dc0FDxqC-EZAp4smx6cJYO3RkegAKng5mAmL9-ugoABRABOMNQMKWBSkaxKoE210uumaoUMegOPlO9hUaj0hG03h85nMxm82j8Bhebwmb0g33BgOBoJ+f3oADESFkABZ5ZYSFHFDaITFaAKmI4eQRmM7tKqVQkM7zXNT7a5Mz7vVkQdm8yFAkEMACu4gg5CS3Dh4wwSJWEtkUoQrkMhEEQ0qpMEDVC+JV2l9hB15k0vsargOOn1MVwEwgWSNKTYHAAStgDaLkUV3aVNlTNIR3NtTP1An5zDZie09EqtOYqZH9vdlMEIpEQOhUBA4PJmetXYXR+inN1y-dNKpBL7DH4jkS2o5tmTXJo9MoAtW-LVE4kJoKKNQ6JCC6iPeuqspZ-PF8uXCrnBZCLWamp9CZerW1EeTroB8SZJBAV6SsWiAGFUvoVEqTZBniPivr4EZ6LomjdGYZg+FhgHJvEebGjyEJQOaYAQUWk5bHo5g+h4DJqCEajMUur4aPo+g1rWC4UoImgEYaxGEPgIIAMrgpAVETmUCD3ruPrmBSUYmAYB6vmS9LYaoDRhmYdx6EJLIiWJYCSX8sLwjCMlonJCkaEYdGqF295HC0DbqNo5KUspniKoERm9iOwGptkxG2R6mgBF094IVGS67por7eGS3RLoGHisdszE9mEQA */
   createMachine(
     {
-      context: { socket: null, uri: '', timeCorrection: 0 },
+      context: { socket: null, uri: '', roomId: '', timeCorrection: 0 },
       tsTypes: {} as import('./connectionMachine.typegen').Typegen0,
       schema: { events: {} as MachineEvents, context: {} as MachineContext },
       predictableActionArguments: true,

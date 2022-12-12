@@ -1,4 +1,4 @@
-import { EVENTS } from 'sync-api-server/events'
+import { EVENT } from 'sync-api-server/events'
 import { AnyCallback } from '../../types'
 import { getGlobalTime } from '../../utils'
 import { MachineContext } from '../connectionMachine'
@@ -29,7 +29,7 @@ export const syncServerTime =
     let underEstimate = 0
     let overEstimate = 0
 
-    socket.on(EVENTS.TIME_SYNC_BACKWARD, (serverTime: number) => {
+    socket.on(EVENT.TIME_SYNC_BACKWARD, (serverTime: number) => {
       const underEstimateLatest = serverTime - getGlobalTime()
       underEstimates.push(underEstimateLatest)
       underEstimate = median(underEstimates)
@@ -41,7 +41,7 @@ export const syncServerTime =
           'color:red; font-size:12px'
         )
     })
-    socket.on(EVENTS.TIME_SYNC_FORWARD, (diff: number) => {
+    socket.on(EVENT.TIME_SYNC_FORWARD, (diff: number) => {
       const overEstimateLatest = diff
       overEstimates.push(overEstimateLatest)
       overEstimate = median(overEstimates)
@@ -59,9 +59,9 @@ export const syncServerTime =
       for (let i = 0; i < TIME_SYNC_CYCLES; i++) {
         if (disableSync) return
         await delay(TIME_SYNC_INTERVAL)
-        socket.emit(EVENTS.TIME_SYNC_BACKWARD)
+        socket.emit(EVENT.TIME_SYNC_BACKWARD)
         await delay(TIME_SYNC_INTERVAL)
-        socket.emit(EVENTS.TIME_SYNC_FORWARD, getGlobalTime())
+        socket.emit(EVENT.TIME_SYNC_FORWARD, getGlobalTime())
       }
       syncTimeFinished = true
     }
@@ -69,7 +69,7 @@ export const syncServerTime =
 
     return () => {
       disableSync = true
-      socket.off(EVENTS.TIME_SYNC_BACKWARD)
-      socket.off(EVENTS.TIME_SYNC_FORWARD)
+      socket.off(EVENT.TIME_SYNC_BACKWARD)
+      socket.off(EVENT.TIME_SYNC_FORWARD)
     }
   }

@@ -1,10 +1,16 @@
 import { Server, Socket } from 'socket.io'
-import { EVENTS } from './events'
-import { VideoState } from './types'
+import { EVENT } from './events'
+import { RoomState, VideoState } from './types'
 
 const VIDEO_SOURCE = 'http://localhost:3000/vid.mp4?t=4234234'
 
 const THRESH_IGNORANCE = 1
+
+const NO_ROOM = 'global'
+
+interface ExtendedSocket extends Socket {
+  currentRoom?: string
+}
 
 const createVideoState = (steam: string): VideoState => ({
   videoTimestamp: 0,
@@ -16,60 +22,105 @@ const createVideoState = (steam: string): VideoState => ({
 
 const timestampNow = () => Date.now() / 1000
 
-let videoState = createVideoState(VIDEO_SOURCE)
-let usersReady = new Map<string, boolean>()
+// let videoState = createVideoState(VIDEO_SOURCE)
+const rooms: Record<string, RoomState> = {}
+// const usersReady = new Map<string, boolean>()
 
-const connection = (socket: Socket) => {
-  usersReady.set(socket.id, true)
+const connection = (socket: ExtendedSocket) => {
+  const room = socket.currentRoom || NO_ROOM
+  if (!rooms[room]) {
+    rooms[room] = {
+      videoState: createVideoState(VIDEO_SOURCE),
+      users: {
+        [socket.id]: {
+          username: '',
+          ready: true
+        }
+      }
+    }
+  } else {
+    rooms[room].users[socket.id] = { username: '', ready: true }
+  }
+  socket.join(room)
   console.log('a user connected', socket.id)
 
-  socket.emit(EVENTS.UPDATE_STATE_FROM_SERVER, videoState)
+  console.log('rooms', rooms)
+
+  socket.emit(EVENT.UPDATE_STATE_FROM_SERVER, rooms[room].videoState)
 }
 
-const disconnection = (socket: Socket) => {
-  usersReady.delete(socket.id)
+const disconnection = (socket: ExtendedSocket) => {
+  const room = socket.currentRoom || NO_ROOM
+  socket.leave(room)
+  delete rooms[room].users[socket.id]
+  if (Object.keys(rooms[room].users).length === 0) {
+    delete rooms[room]
+  }
   console.log('user disconnected', socket.id)
+  console.log('rooms', rooms)
 }
 
-const syncTime = (socket: Socket) => {
-  socket.on(EVENTS.TIME_SYNC_BACKWARD, () => {
-    socket.emit(EVENTS.TIME_SYNC_BACKWARD, timestampNow())
+const syncTime = (socket: ExtendedSocket) => {
+  socket.on(EVENT.TIME_SYNC_BACKWARD, () => {
+    socket.emit(EVENT.TIME_SYNC_BACKWARD, timestampNow())
   })
-  socket.on(EVENTS.TIME_SYNC_FORWARD, (timestamp: number) => {
-    socket.emit(EVENTS.TIME_SYNC_FORWARD, timestampNow() - timestamp)
+  socket.on(EVENT.TIME_SYNC_FORWARD, (timestamp: number) => {
+    socket.emit(EVENT.TIME_SYNC_FORWARD, timestampNow() - timestamp)
   })
 }
 
 export const createSocketServer = (server: any) => {
   const io = new Server(server)
-  io.on('connection', socket => {
+  io.use((socket: ExtendedSocket, next) => {
+    const { room } = socket.handshake.query
+    socket.currentRoom = room as string
+    return next()
+  })
+  io.on('connection', (socket: ExtendedSocket) => {
     connection(socket)
     syncTime(socket)
-    socket.on(EVENTS.READY, newState => {
-      usersReady.set(socket.id, true)
-      const allReady = Array.from(usersReady.values()).every(
-        ready => ready === true
-      )
-      console.log(usersReady.entries())
-      console.log(socket.id, 'can play', allReady, videoState.isLoading)
+    socket.on(EVENT.READY, newState => {
+      const room = socket.currentRoom || NO_ROOM
+      const users = rooms[room].users
 
-      if (allReady && videoState.isLoading) {
+      users[socket.id] = {
+        username: users[socket.id].username,
+        ready: true
+      }
+
+      const allReady = Object.values(users).every(user => user.ready)
+
+      if (allReady && newState.isLoading) {
         console.log('all ready, playing')
-        videoState = { ...newState, playing: true, isLoading: false }
-        io.emit(EVENTS.UPDATE_STATE_FROM_SERVER, videoState)
+        rooms[room].videoState = {
+          ...newState,
+          playing: true,
+          isLoading: false
+        }
+        io.to(room).emit(EVENT.UPDATE_STATE_FROM_SERVER, rooms[room].videoState)
       }
     })
-    socket.on(EVENTS.NOT_READY, newState => {
-      usersReady.set(socket.id, false)
+    socket.on(EVENT.NOT_READY, newState => {
       console.log(socket.id, 'waiting')
+      const room = socket.currentRoom || NO_ROOM
 
-      videoState = newState
+      const users = rooms[room].users
+      const user = users[socket.id]
+      users[socket.id] = {
+        username: user?.username || '',
+        ready: false
+      }
 
-      io.emit(EVENTS.UPDATE_STATE_FROM_SERVER, newState)
+      rooms[room].videoState = newState
+
+      io.to(room).emit(EVENT.UPDATE_STATE_FROM_SERVER, newState)
     })
 
-    socket.on(EVENTS.UPDATE_STATE_FROM_CLIENT, (potentialState: VideoState) => {
+    socket.on(EVENT.UPDATE_STATE_FROM_CLIENT, (potentialState: VideoState) => {
       console.log('NEW STATE', potentialState)
+      const room = socket.currentRoom || NO_ROOM
+      const videoState = rooms[room].videoState
+
       const isTooSoon =
         timestampNow() - videoState.lastUpdated < THRESH_IGNORANCE
       const isOtherUser = potentialState.clientId !== videoState.clientId
@@ -78,12 +129,15 @@ export const createSocketServer = (server: any) => {
       // console.log({ isTooSoon, isOtherUser, urlDiff, stale })
       if ((isTooSoon && isOtherUser) || stale) return
       if (urlDiff) {
-        videoState = createVideoState(potentialState.streamUrl)
-        return socket.emit(EVENTS.UPDATE_STATE_FROM_SERVER, videoState)
+        rooms[room].videoState = createVideoState(potentialState.streamUrl)
+        return socket.emit(
+          EVENT.UPDATE_STATE_FROM_SERVER,
+          rooms[room].videoState
+        )
       }
-      videoState = potentialState
+      rooms[room].videoState = potentialState
       console.log('send new state')
-      io.emit(EVENTS.UPDATE_STATE_FROM_SERVER, videoState)
+      io.to(room).emit(EVENT.UPDATE_STATE_FROM_SERVER, rooms[room].videoState)
     })
     socket.on('disconnect', () => disconnection(socket))
   })
