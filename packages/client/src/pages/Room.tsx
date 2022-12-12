@@ -8,11 +8,16 @@ import { VideoPlayer } from '../components/VideoPlayer'
 import { useVideoSync } from '../hooks/useVideoSync'
 import { connectionMachine } from '../machines/connectionMachine'
 
+const WEB_SOCKET_URL =
+  process.env.NODE_EN === 'production'
+    ? process.env.REACT_APP_PRODUCTION_WEBSOCKET_URL
+    : 'ws://localhost:8080'
+
 export const Room = () => {
   const { roomId } = useParams()
   const videoRef = useRef<HTMLVideoElement>(null)
   const [connection] = useMachine(connectionMachine, {
-    context: { uri: 'ws://localhost:8080', roomId }
+    context: { uri: WEB_SOCKET_URL, roomId }
   })
 
   const socket = connection.context.socket
