@@ -1,5 +1,6 @@
 import express from 'express'
 import http from 'http'
+import path from 'path'
 import { createSocketServer } from './socket'
 
 const PORT = process.env.PORT || 8080
@@ -8,8 +9,14 @@ const server = http.createServer(app)
 
 createSocketServer(server)
 
-app.get('/', (req, res) => {
-  res.send('Hello from server')
+app.use(
+  express.static(path.resolve(__dirname, '../../packages', 'client/build'))
+)
+
+app.get('*', (_, res) => {
+  res.sendFile(
+    path.resolve(__dirname, '../../packages/', 'client/build/index.html')
+  )
 })
 
 server.listen(PORT, () => {

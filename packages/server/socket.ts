@@ -1,8 +1,10 @@
 import { Server, Socket } from 'socket.io'
 import { EVENT } from './events'
 import { RoomState, VideoState } from './types'
+import * as dotenv from 'dotenv'
+dotenv.config()
 
-const VIDEO_SOURCE = 'http://localhost:3000/vid.mp4?t=4234234'
+const VIDEO_SOURCE = process.env.HOST_URL + '/vid.mp4?t=4234234'
 
 const THRESH_IGNORANCE = 1
 
